@@ -28,4 +28,76 @@ This is the public data that can be used to explore how different customer types
 
 ## Process
 
-I added two columns "ride_length" and "day_of_week" to each .csv file using spreadsheet. 
+I added two columns "ride_length" and "day_of_week" to each .csv file using the Excel spreadsheet. 
+
+Combine 12 months of data in RStudio. Clean the data.
+
+### Codes
+
+```{r}
+# Load required libraries
+library(tidyverse)
+library(lubridate)
+library(skimr)
+library(janitor)
+
+# Load and combine data
+setwd("/Users/zhuoli/Downloads/2023_divvy_tripdata/2023_divvy_tripdata_csv")
+file_list <- list.files(pattern = "*.csv")
+combined_data <- file_list %>% map_dfr(read_csv)
+combined_data <- clean_names(combined_data)
+
+# Cleaning and mutating the data
+combined_data <- clean_names(combined_data)
+combined_data <- combined_data %>%
+  mutate(started_at = mdy_hms(started_at),
+         ended_at = mdy_hms(ended_at))
+combined_data <- combined_data %>%
+  filter(ride_length > 0)
+```
+
+## Analyze and Share
+Analyze Differences Between Annual Members and Casual Riders: Explore patterns, trends, and differences between annual members and casual riders.
+
+### Codes
+
+```{r}
+# Trip Duration Comparison
+combined_data %>%
+  group_by(member_casual) %>%
+  summarise(avg_ride_length = mean(ride_length),
+            total_rides = n()) %>%
+  ggplot(aes(x = member_casual, y = avg_ride_length, fill = member_casual)) +
+  geom_col() +
+  labs(title = "Average Ride Duration by User Type",
+       x = "User Type", y = "Average Ride Duration (minutes)")
+```
+![image](https://github.com/user-attachments/assets/29009bb7-ce71-4de0-9673-b87077c462c2)
+
+
+```{r}
+# Usage by Day of Week
+combined_data %>%
+  mutate(day_of_week = factor(day_of_week, levels = c(2, 3, 4, 5, 6, 7, 1),  # Reorder levels: Monday=2, ..., Sunday=1
+                              labels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))) %>%
+  group_by(member_casual, day_of_week) %>%
+  summarise(number_of_rides = n()) %>%
+  ggplot(aes(x = day_of_week, y = number_of_rides, fill = member_casual)) +
+  geom_col(position = "dodge") +
+  labs(title = "Number of Rides by Day of the Week", x = "Day of the Week", y = "Number of Rides")
+```
+![image](https://github.com/user-attachments/assets/0fc97362-7375-404b-8e5f-df0c1a0c5b5a)
+
+
+### Summary
+1. Casual riders use Cyclistic bikes longer than annual members on average.
+2. Annual members tend to have more rides during weekdays.
+
+
+## Act
+After identifying the differences between casual and member riders, marketing strategies to target casual riders can be developed to persuade them to become members.
+
+### Recommendations
+1. The marketing campaign can focus on promoting a lower rate of cost of longer rides to casual riders.
+2. To maintain current annual members, we can have some discounts when using the bikes on weekends.
+3. We can offer the cashback/gift program to loyal members. The more they use Cyclistic bikes, the less they pay, or they can get some cashbacks/small gifts, such as an encouraging medal to people who accomplish a 100km ride.
